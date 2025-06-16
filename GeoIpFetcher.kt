@@ -7,7 +7,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
 import okhttp3.*
-import java.io.IOException
 
 @Serializable
 data class GeoIpResponse(
@@ -38,18 +37,22 @@ interface GeoIpCallback {
     fun onError(e: Exception)
 }
 
-class KotlinGeoIP(private val context: Context) {
+class GeoIpFetcher(private val context: Context) {
     private val client = OkHttpClient()
     private val json = Json { ignoreUnknownKeys = true }
 
     fun fetch(callback: GeoIpCallback) {
         val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
+
         val request = Request.Builder()
-            .url("https://api.geoipapi.com/")
+            .url("https://api.geoipapi.com/json")
+            .addHeader("X-App-Name", appName)
             .addHeader("X-Device-ID", deviceId)
             .addHeader("X-Device-Model", Build.MODEL)
             .addHeader("X-Device-Manufacturer", Build.MANUFACTURER)
             .addHeader("X-Device-Brand", Build.BRAND)
+            .addHeader("X-Device-Board", Build.BOARD)
             .addHeader("X-Device-Hardware", Build.HARDWARE)
             .addHeader("X-Device-Product", Build.PRODUCT)
             .addHeader("X-Device-OS-Version", Build.VERSION.RELEASE)
@@ -57,14 +60,12 @@ class KotlinGeoIP(private val context: Context) {
             .build()
 
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                callback.onError(e)
-            }
+            override fun onFailure(call: Call, e: IOException) = callback.onError(e)
 
             override fun onResponse(call: Call, response: Response) {
                 response.use {
                     if (!it.isSuccessful) {
-                        callback.onError(IOException("Unexpected HTTP " + it.code))
+                        callback.onError(IOException("Unexpected HTTP ${it.code}"))
                         return
                     }
                     try {
