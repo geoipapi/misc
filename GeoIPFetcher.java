@@ -4,8 +4,8 @@ import android.content.Context;
 import android.os.Build;
 import android.provider.Settings;
 
-import com.google.gson.annotations.SerializedName;
 import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -15,7 +15,7 @@ import okhttp3.Response;
 
 import java.io.IOException;
 
-public class AndroidGeoIP {
+public class GeoIpFetcher {
 
     public interface GeoIpCallback {
         void onSuccess(GeoIpResponse data);
@@ -32,9 +32,11 @@ public class AndroidGeoIP {
 
     public void fetchGeoIp(final GeoIpCallback callback) {
         String deviceId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+        String appName = context.getApplicationInfo().loadLabel(context.getPackageManager()).toString();
 
         Request request = new Request.Builder()
                 .url("https://api.geoipapi.com/")
+                .addHeader("X-App-Name", appName)
                 .addHeader("X-Device-ID", deviceId)
                 .addHeader("X-Device-Model", Build.MODEL)
                 .addHeader("X-Device-Manufacturer", Build.MANUFACTURER)
@@ -56,7 +58,6 @@ public class AndroidGeoIP {
                     callback.onError(new IOException("Unexpected response: " + response));
                     return;
                 }
-
                 String body = response.body().string();
                 try {
                     GeoIpResponse data = gson.fromJson(body, GeoIpResponse.class);
