@@ -35,7 +35,7 @@ public class GeoIpFetcher {
         String appName = context.getApplicationInfo().loadLabel(context.getPackageManager()).toString();
 
         Request request = new Request.Builder()
-                .url("https://api.geoipapi.com/")
+                .url("https://api.geoipapi.com/json")
                 .addHeader("X-App-Name", appName)
                 .addHeader("X-Device-ID", deviceId)
                 .addHeader("X-Device-Model", Build.MODEL)
